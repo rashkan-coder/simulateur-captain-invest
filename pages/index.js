@@ -1,455 +1,506 @@
-import React, { useState, useEffect } from 'react';
-import { Calculator, TrendingUp, DollarSign, Home, FileText, BarChart3, Users } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import Head from 'next/head';
 
-export default function SimulateurImmobilier() {
+const PatrimoineComparator = () => {
   const [formData, setFormData] = useState({
-    prixAchat: 200000,
-    fraisNotaire: 7,
-    apport: 40000,
-    coutMeubles: 5000,
+    // Paramètres Achat
+    prixAchat: 300000,
+    fraisNotaire: 7.5,
+    travaux: 15000,
+    apport: 60000,
     tauxEmprunt: 3.5,
-    tauxAssurance: 0.36,
     dureeEmprunt: 20,
-    loyerMensuel: 800,
-    chargesCopro: 10,
     taxeFonciere: 1200,
-    typeLocation: 'nu',
-    structureJuridique: 'nomPropre',
-    tauxMarginal: 30,
-    augmentationLoyer: 2,
-    augmentationCharges: 2.5,
-    augmentationValeur: 2,
-    tauxRendementFinancier: 7,
-    fiscaliteFinanciere: 'flatTax'
+    chargesMensuelles: 150,
+    grosTravaux: 0.15,
+    
+    // Paramètres Location
+    loyer: 1400,
+    tauxRendement: 3.0,
+    
+    // Paramètres Fiscalité
+    fiscalitePlacement: 30
   });
 
-  const [results, setResults] = useState(null);
   const [activeTab, setActiveTab] = useState('saisie');
 
-  const playfairStyle = { fontFamily: 'Playfair Display, serif' };
-
-  useEffect(() => {
-    const calculateResults = () => {
-      try {
-        const dureeEnMois = formData.dureeEmprunt * 12;
-        const coutTotalAcquisition = formData.prixAchat * (1 + formData.fraisNotaire / 100);
-        const montantEmprunte = Math.max(0, coutTotalAcquisition - formData.apport);
-        const tauxMensuel = (formData.tauxEmprunt / 100) / 12;
-        const tauxAssuranceMensuel = (formData.tauxAssurance / 100) / 12;
-        
-        let mensualiteCapitalInterets = 0;
-        let mensualiteAssurance = 0;
-        let mensualiteTotal = 0;
-        
-        if (montantEmprunte > 0) {
-          mensualiteCapitalInterets = montantEmprunte * 
-            (tauxMensuel * Math.pow(1 + tauxMensuel, dureeEnMois)) / 
-            (Math.pow(1 + tauxMensuel, dureeEnMois) - 1);
-          
-          mensualiteAssurance = montantEmprunte * tauxAssuranceMensuel;
-          mensualiteTotal = mensualiteCapitalInterets + mensualiteAssurance;
-        }
-
-        let resultatsParMois = [];
-        let capitalRestantDu = montantEmprunte;
-        let valeurBien = formData.prixAchat;
-        let loyerActuel = formData.loyerMensuel;
-        let chargesActuelles = (loyerActuel * formData.chargesCopro) / 100;
-        let taxeFonciereActuelle = formData.taxeFonciere / 12;
-        let amortissementsCumules = 0;
-        
-        let patrimoineFinancier = formData.apport;
-        const tauxRendementFinancierMensuel = Math.pow(1 + formData.tauxRendementFinancier / 100, 1/12) - 1;
-        const tauxValorisationMensuel = Math.pow(1 + formData.augmentationValeur / 100, 1/12) - 1;
-
-        for (let mois = 1; mois <= Math.min(dureeEnMois, 360); mois++) {
-          const annee = Math.ceil(mois / 12);
-          
-          if (mois > 1) {
-            const tauxAugmentationLoyerMensuel = Math.pow(1 + formData.augmentationLoyer / 100, 1/12) - 1;
-            loyerActuel *= (1 + tauxAugmentationLoyerMensuel);
-            chargesActuelles = (loyerActuel * formData.chargesCopro) / 100;
-            
-            const tauxAugmentationChargesMensuel = Math.pow(1 + formData.augmentationCharges / 100, 1/12) - 1;
-            taxeFonciereActuelle *= (1 + tauxAugmentationChargesMensuel);
-          }
-          
-          valeurBien *= (1 + tauxValorisationMensuel);
-
-          let interetsMois = 0;
-          let capitalRembourse = 0;
-          
-          if (montantEmprunte > 0 && capitalRestantDu > 0) {
-            interetsMois = capitalRestantDu * tauxMensuel;
-            capitalRembourse = mensualiteCapitalInterets - interetsMois;
-            capitalRestantDu = Math.max(0, capitalRestantDu - capitalRembourse);
-          }
-
-          const revenusLocatifs = loyerActuel;
-          const revenusNets = revenusLocatifs - chargesActuelles - taxeFonciereActuelle;
-
-          let amortissementBien = 0;
-          let amortissementMeubles = 0;
-          
-          if (formData.typeLocation === 'meuble') {
-            amortissementBien = formData.prixAchat / (20 * 12);
-            amortissementMeubles = formData.coutMeubles / (5 * 12);
-          }
-          
-          const amortissementTotal = amortissementBien + (mois <= 60 ? amortissementMeubles : 0);
-          amortissementsCumules += amortissementTotal;
-
-          let impots = 0;
-          let baseImposable = 0;
-
-          if (formData.structureJuridique === 'nomPropre') {
-            if (formData.typeLocation === 'nu') {
-              if (revenusNets * 12 <= 15000) {
-                baseImposable = revenusNets * 0.7;
-              } else {
-                baseImposable = revenusNets - interetsMois;
-              }
-              const impotRevenu = Math.max(0, baseImposable * (formData.tauxMarginal / 100));
-              const prelevementsSociaux = Math.max(0, baseImposable * 0.172);
-              impots = impotRevenu + prelevementsSociaux;
-            } else {
-              if (revenusLocatifs * 12 <= 72600) {
-                baseImposable = revenusLocatifs * 0.5;
-              } else {
-                baseImposable = revenusNets - interetsMois - amortissementTotal;
-              }
-              impots = Math.max(0, baseImposable * (formData.tauxMarginal / 100));
-            }
-          } else if (formData.structureJuridique === 'sciIR') {
-            baseImposable = revenusNets - interetsMois - (formData.typeLocation === 'meuble' ? amortissementTotal : 0);
-            if (formData.typeLocation === 'nu') {
-              const impotRevenu = Math.max(0, baseImposable * (formData.tauxMarginal / 100));
-              const prelevementsSociaux = Math.max(0, baseImposable * 0.172);
-              impots = impotRevenu + prelevementsSociaux;
-            } else {
-              impots = Math.max(0, baseImposable * (formData.tauxMarginal / 100));
-            }
-          } else {
-            baseImposable = revenusNets - interetsMois - amortissementTotal;
-            impots = Math.max(0, baseImposable * 0.15);
-          }
-
-          const cashFlowNet = revenusLocatifs - chargesActuelles - taxeFonciereActuelle - mensualiteTotal - impots;
-          
-          const fluxNetFinancier = -cashFlowNet;
-          const gainBrutMensuel = patrimoineFinancier * tauxRendementFinancierMensuel;
-          
-          let impotFinancier = 0;
-          if (formData.fiscaliteFinanciere === 'flatTax') {
-            impotFinancier = gainBrutMensuel * 0.30;
-          } else {
-            impotFinancier = gainBrutMensuel * ((formData.tauxMarginal / 100) + 0.172);
-          }
-          
-          const gainNetMensuel = gainBrutMensuel - impotFinancier;
-          patrimoineFinancier = patrimoineFinancier + gainNetMensuel + fluxNetFinancier;
-          
-          const plusValueBrute = valeurBien - formData.prixAchat;
-          const plusValueAvecAmortissements = plusValueBrute + amortissementsCumules;
-          
-          let abattementImpot = 0;
-          let abattementPrelevements = 0;
-          
-          if (formData.structureJuridique === 'nomPropre') {
-            if (annee > 5) {
-              abattementImpot = Math.min((annee - 5) * 6, 100);
-            }
-            if (annee > 5 && annee <= 22) {
-              abattementPrelevements = (annee - 5) * 1.65;
-            } else if (annee > 22) {
-              abattementPrelevements = Math.min(30 + (annee - 22) * 9, 100);
-            }
-          }
-          
-          const plusValueImposableImpot = Math.max(0, plusValueAvecAmortissements * (100 - abattementImpot) / 100);
-          const plusValueImposablePrelevements = Math.max(0, plusValueAvecAmortissements * (100 - abattementPrelevements) / 100);
-          
-          const impotPlusValueImpot = plusValueImposableImpot * 0.19;
-          const impotPlusValuePrelevements = plusValueImposablePrelevements * 0.172;
-          const impotPlusValueTotal = impotPlusValueImpot + impotPlusValuePrelevements;
-          
-          const valeurCession = valeurBien - capitalRestantDu - impotPlusValueTotal;
-
-          resultatsParMois.push({
-            mois,
-            annee,
-            loyerActuel: Math.round(loyerActuel),
-            chargesActuelles: Math.round(chargesActuelles),
-            taxeFonciereActuelle: Math.round(taxeFonciereActuelle),
-            mensualiteTotal: Math.round(mensualiteTotal),
-            interetsMois: Math.round(interetsMois),
-            capitalRembourse: Math.round(capitalRembourse),
-            capitalRestantDu: Math.round(capitalRestantDu),
-            amortissementTotal: Math.round(amortissementTotal),
-            amortissementsCumules: Math.round(amortissementsCumules),
-            baseImposable: Math.round(baseImposable),
-            impots: Math.round(impots),
-            cashFlowNet: Math.round(cashFlowNet),
-            valeurBien: Math.round(valeurBien),
-            plusValue: Math.round(plusValueBrute),
-            plusValueAvecAmortissements: Math.round(plusValueAvecAmortissements),
-            abattementImpot: Math.round(abattementImpot * 10) / 10,
-            abattementPrelevements: Math.round(abattementPrelevements * 10) / 10,
-            impotPlusValueTotal: Math.round(impotPlusValueTotal),
-            valeurCession: Math.round(valeurCession),
-            patrimoineFinancier: Math.round(patrimoineFinancier),
-            fluxNetFinancier: Math.round(fluxNetFinancier),
-            gainBrutMensuel: Math.round(gainBrutMensuel),
-            impotFinancier: Math.round(impotFinancier),
-            gainNetMensuel: Math.round(gainNetMensuel)
-          });
-        }
-
-        const cashFlowTotal = resultatsParMois.reduce((sum, r) => sum + r.cashFlowNet, 0);
-        const impotsTotal = resultatsParMois.reduce((sum, r) => sum + r.impots, 0);
-        const rentabiliteBrute = (formData.loyerMensuel * 12 / formData.prixAchat) * 100;
-        const chargesAnnuelles = (formData.loyerMensuel * formData.chargesCopro / 100) * 12 + formData.taxeFonciere;
-        const rentabiliteNette = ((formData.loyerMensuel * 12 - chargesAnnuelles) / formData.prixAchat) * 100;
-
-        setResults({
-          resultatsParMois,
-          synthese: {
-            coutTotalAcquisition: Math.round(coutTotalAcquisition),
-            apport: formData.apport,
-            montantEmprunte: Math.round(montantEmprunte),
-            mensualiteTotal: Math.round(mensualiteTotal),
-            cashFlowTotal: Math.round(cashFlowTotal),
-            impotsTotal: Math.round(impotsTotal),
-            rentabiliteBrute: rentabiliteBrute.toFixed(2),
-            rentabiliteNette: rentabiliteNette.toFixed(2),
-            valeurFinale: resultatsParMois[resultatsParMois.length - 1]?.valeurBien || 0,
-            gainTotal: Math.round(cashFlowTotal + (resultatsParMois[resultatsParMois.length - 1]?.valeurCession || 0)),
-            gainFinancier: Math.round(resultatsParMois[resultatsParMois.length - 1]?.patrimoineFinancier || 0),
-            totalInvestiFinancier: Math.round(formData.apport + (mensualiteTotal * dureeEnMois))
-          }
-        });
-      } catch (error) {
-        console.error('Erreur calcul:', error);
-      }
-    };
-
-    calculateResults();
-  }, [formData]);
-
   const handleInputChange = (field, value) => {
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue >= 0) {
-      setFormData(prev => ({
-        ...prev,
-        [field]: numValue
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [field]: parseFloat(value) || 0
+    }));
   };
 
-  const formatCurrency = (amount) => {
-    if (isNaN(amount)) return '0 €';
+  const calculations = useMemo(() => {
+    const { prixAchat, fraisNotaire, travaux, apport, tauxEmprunt, dureeEmprunt, taxeFonciere, chargesMensuelles, grosTravaux, loyer, tauxRendement, fiscalitePlacement } = formData;
+    
+    const montantEmprunt = prixAchat * (1 + fraisNotaire/100) + travaux - apport;
+    const tauxMensuel = tauxEmprunt / 100 / 12;
+    const nbMensualites = dureeEmprunt * 12;
+    const mensualiteCredit = montantEmprunt * (tauxMensuel * Math.pow(1 + tauxMensuel, nbMensualites)) / (Math.pow(1 + tauxMensuel, nbMensualites) - 1);
+    const coutMensuelAchat = mensualiteCredit + taxeFonciere / 12 + chargesMensuelles;
+    
+    const results = [];
+    const valeurBienInitiale = prixAchat + travaux;
+    let patrimoineLocationBrut = 0;
+    let impotsCumulesLocation = 0;
+    let loyerAnnuel = loyer * 12;
+    let taxeFonciereAnnuelle = taxeFonciere;
+    let placementPostCredit = 0;
+    let capitalRestantDu = montantEmprunt;
+    let depenseGrosTravaux = 0;
+    
+    const capitalInitialLocation = apport + travaux + taxeFonciere + (chargesMensuelles * 12);
+    patrimoineLocationBrut = capitalInitialLocation;
+    
+    for (let annee = 1; annee <= 30; annee++) {
+      const valeurBien = valeurBienInitiale * Math.pow(1.015, annee);
+      loyerAnnuel = loyerAnnuel * 1.015;
+      taxeFonciereAnnuelle = taxeFonciereAnnuelle * 1.03;
+      
+      let coutGrosTravaux = 0;
+      if (annee % 10 === 0) {
+        coutGrosTravaux = valeurBien * grosTravaux / 100;
+        depenseGrosTravaux += coutGrosTravaux;
+      }
+      
+      if (annee <= dureeEmprunt) {
+        for (let mois = 1; mois <= 12; mois++) {
+          const interetsMois = capitalRestantDu * tauxMensuel;
+          const capitalMois = mensualiteCredit - interetsMois;
+          capitalRestantDu -= capitalMois;
+        }
+      }
+      
+      let coutAnnuelAchat;
+      if (annee <= dureeEmprunt) {
+        coutAnnuelAchat = mensualiteCredit * 12 + taxeFonciereAnnuelle + chargesMensuelles * 12 + coutGrosTravaux;
+      } else {
+        coutAnnuelAchat = taxeFonciereAnnuelle + chargesMensuelles * 12 + coutGrosTravaux;
+      }
+      
+      const differentielAnnuel = coutAnnuelAchat - loyerAnnuel;
+      const capitalDebutAnnee = patrimoineLocationBrut;
+      
+      patrimoineLocationBrut = (patrimoineLocationBrut + differentielAnnuel) * (1 + tauxRendement/100);
+      
+      const gainsAnnee = patrimoineLocationBrut - capitalDebutAnnee - differentielAnnuel;
+      const impotAnnee = gainsAnnee * fiscalitePlacement / 100;
+      impotsCumulesLocation += impotAnnee;
+      
+      const patrimoineLocationNet = patrimoineLocationBrut - impotsCumulesLocation;
+      
+      let patrimoineAchat = valeurBien - Math.max(0, capitalRestantDu) - depenseGrosTravaux;
+      
+      if (annee > dureeEmprunt) {
+        const chargesAchatAnnuelles = taxeFonciereAnnuelle + chargesMensuelles * 12;
+        const economieAnnuelle = loyerAnnuel - chargesAchatAnnuelles;
+        
+        placementPostCredit = (placementPostCredit + economieAnnuelle) * (1 + tauxRendement/100);
+        
+        patrimoineAchat += placementPostCredit;
+      }
+      
+      results.push({
+        annee,
+        coutMensuelLocation: Math.round(loyerAnnuel / 12),
+        coutMensuelAchat: Math.round(coutAnnuelAchat / 12),
+        patrimoineAchat: Math.round(patrimoineAchat),
+        patrimoineLocationBrut: Math.round(patrimoineLocationBrut),
+        patrimoineLocationNet: Math.round(patrimoineLocationNet),
+        impotsCumules: Math.round(impotsCumulesLocation),
+        valeurBien: Math.round(valeurBien),
+        capitalRestantDu: Math.round(Math.max(0, capitalRestantDu)),
+        placementPostCredit: Math.round(placementPostCredit),
+        creditFini: annee > dureeEmprunt,
+        grosTravaux: Math.round(coutGrosTravaux),
+        differentiel: Math.round(differentielAnnuel),
+        differentielMensuel: Math.round(differentielAnnuel / 12)
+      });
+    }
+    
+    return { results, coutMensuelInitial: Math.round(coutMensuelAchat) };
+  }, [formData]);
+
+  const formatEuro = (value) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
-      minimumFractionDigits: 0
-    }).format(amount);
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
   };
 
   return (
-    <>
-      <Head>
-        <title>Simulateur Immobilier vs Financier - Captain Invest</title>
-        <meta name="description" content="Comparez la rentabilité entre investissement immobilier et placement financier avec notre simulateur complet." />
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" />
-      </Head>
-      
-      <div className="min-h-screen p-4" style={{background: 'linear-gradient(135deg, #44145b 0%, #2a0845 50%, #1a0530 100%)'}}>
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <Calculator className="w-12 h-12 text-white mr-3" />
-              <h1 className="text-4xl font-bold text-white" style={playfairStyle}>Simulateur Immobilier vs Financier</h1>
-            </div>
-            <p className="text-xl text-white mb-2" style={playfairStyle}>Immobilier ou placements financiers : lequel vous rapporte le plus ?</p>
-            <p className="text-lg text-white opacity-90" style={playfairStyle}>Saisissez vos chiffres, ajustez les paramètres et découvrez le verdict.</p>
+    <div className="min-h-screen p-4" style={{ 
+      backgroundColor: '#340849',
+      fontFamily: 'Playfair Display, serif'
+    }}>
+      <div className="max-w-7xl mx-auto">
+        <header className="text-center mb-8">
+          <div className="flex justify-center items-center gap-3 mb-4">
+            <div className="w-8 h-8 text-white">📊</div>
+            <h1 className="text-4xl font-bold text-white">Comparateur Patrimoine</h1>
           </div>
-
-          {/* Navigation */}
-          <div className="flex justify-center mb-8">
-            <div className="bg-white rounded-lg shadow-lg p-1 flex">
+          <p className="text-xl text-white mb-8">Achat vs Location - Quelle stratégie optimise votre patrimoine ?</p>
+          
+          <div className="bg-white rounded-2xl shadow-xl p-2 mb-8">
+            <div className="flex space-x-1">
               <button
                 onClick={() => setActiveTab('saisie')}
-                className={`px-6 py-3 rounded-md font-medium transition-all ${
-                  activeTab === 'saisie' ? 'text-white shadow-md' : 'text-gray-600 hover:text-gray-800'
+                className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+                  activeTab === 'saisie' 
+                    ? 'text-white shadow-lg' 
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
                 }`}
-                style={{
-                  ...playfairStyle,
-                  backgroundColor: activeTab === 'saisie' ? '#775d83' : 'transparent'
-                }}
+                style={activeTab === 'saisie' ? { backgroundColor: '#340849' } : {}}
               >
-                <FileText className="w-5 h-5 inline mr-2" />
                 Saisie
               </button>
               <button
                 onClick={() => setActiveTab('resultats')}
-                className={`px-6 py-3 rounded-md font-medium transition-all ${
-                  activeTab === 'resultats' ? 'text-white shadow-md' : 'text-gray-600 hover:text-gray-800'
+                className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+                  activeTab === 'resultats' 
+                    ? 'text-white shadow-lg' 
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
                 }`}
-                style={{
-                  ...playfairStyle,
-                  backgroundColor: activeTab === 'resultats' ? '#775d83' : 'transparent'
-                }}
+                style={activeTab === 'resultats' ? { backgroundColor: '#340849' } : {}}
               >
-                <BarChart3 className="w-5 h-5 inline mr-2" />
                 Résultats
-              </button>
-              <button
-                onClick={() => setActiveTab('comparaison')}
-                className={`px-6 py-3 rounded-md font-medium transition-all ${
-                  activeTab === 'comparaison' ? 'text-white shadow-md' : 'text-gray-600 hover:text-gray-800'
-                }`}
-                style={{
-                  ...playfairStyle,
-                  backgroundColor: activeTab === 'comparaison' ? '#775d83' : 'transparent'
-                }}
-              >
-                <Users className="w-5 h-5 inline mr-2" />
-                Comparaison
               </button>
             </div>
           </div>
+        </header>
 
-          {/* Contenu des onglets - Interface complète avec tous les formulaires et graphiques */}
-          {activeTab === 'saisie' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-6">
-                <h2 className="text-2xl font-bold text-white mb-6" style={playfairStyle}>📊 Investissement Immobilier Locatif</h2>
-                
-                {/* Tous les formulaires ici... */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center" style={playfairStyle}>
-                    <Home className="w-6 h-6 mr-2" style={{color: '#775d83'}} />
-                    Acquisition
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2" style={playfairStyle}>Prix d'achat (€)</label>
-                      <input
-                        type="number"
-                        value={formData.prixAchat}
-                        onChange={(e) => handleInputChange('prixAchat', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        style={playfairStyle}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2" style={playfairStyle}>Frais de notaire (%)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={formData.fraisNotaire}
-                        onChange={(e) => handleInputChange('fraisNotaire', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        style={playfairStyle}
-                      />
-                    </div>
-                    {/* ... autres champs ... */}
-                  </div>
-                </div>
-                
-                {/* Section Investissement Financier */}
-                <h2 className="text-2xl font-bold text-white mb-6 pt-8" style={playfairStyle}>💰 Investissement Financier</h2>
-                <div className="rounded-xl shadow-lg p-6" style={{backgroundColor: '#faf9f7'}}>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center" style={playfairStyle}>
-                    <TrendingUp className="w-6 h-6 mr-2" style={{color: '#f8e53b'}} />
-                    Investissement Financier
-                  </h3>
-                  {/* Formulaires investissement financier */}
-                </div>
+        {activeTab === 'saisie' ? (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="flex items-center gap-2 mb-6">
+                <span className="w-6 h-6 text-green-600">🏠</span>
+                <h2 className="text-2xl font-semibold text-gray-800">Paramètres Achat</h2>
               </div>
               
-              {/* Aperçu */}
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow-lg p-6 sticky top-4">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4" style={playfairStyle}>Aperçu rapide</h3>
-                  {results && (
-                    <div className="space-y-4">
-                      <div className="p-4 rounded-lg" style={{backgroundColor: 'rgba(119, 93, 131, 0.1)'}}>
-                        <div className="text-sm text-gray-600" style={playfairStyle}>Rentabilité brute</div>
-                        <div className="text-2xl font-bold" style={{...playfairStyle, color: '#775d83'}}>{results.synthese.rentabiliteBrute}%</div>
-                      </div>
-                      {/* Autres indicateurs... */}
-                    </div>
-                  )}
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Prix d'achat (€)</label>
+                  <input
+                    type="number"
+                    value={formData.prixAchat}
+                    onChange={(e) => handleInputChange('prixAchat', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Frais de notaire (%)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.fraisNotaire}
+                    onChange={(e) => handleInputChange('fraisNotaire', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Travaux à l'acquisition (€)</label>
+                  <input
+                    type="number"
+                    value={formData.travaux}
+                    onChange={(e) => handleInputChange('travaux', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Apport personnel (€)</label>
+                  <input
+                    type="number"
+                    value={formData.apport}
+                    onChange={(e) => handleInputChange('apport', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Taux d'emprunt (%)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.tauxEmprunt}
+                    onChange={(e) => handleInputChange('tauxEmprunt', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Durée d'emprunt (années)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="25"
+                    value={formData.dureeEmprunt}
+                    onChange={(e) => handleInputChange('dureeEmprunt', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Taxe foncière annuelle (€)</label>
+                  <input
+                    type="number"
+                    value={formData.taxeFonciere}
+                    onChange={(e) => handleInputChange('taxeFonciere', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Charges mensuelles (€)</label>
+                  <input
+                    type="number"
+                    value={formData.chargesMensuelles}
+                    onChange={(e) => handleInputChange('chargesMensuelles', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gros travaux (% valeur / 10 ans)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.grosTravaux}
+                    onChange={(e) => handleInputChange('grosTravaux', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Onglets Résultats et Comparaison avec graphiques complets */}
-          {activeTab === 'comparaison' && results && (
-            <div className="space-y-8">
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-6" style={playfairStyle}>
-                  Comparaison des gains nets : Immobilier vs Investissement Financier
-                </h3>
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="flex items-center gap-2 mb-6">
+                <span className="w-6 h-6 text-blue-600">📈</span>
+                <h2 className="text-2xl font-semibold text-gray-800">Paramètres Location</h2>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Loyer mensuel (€)</label>
+                  <input
+                    type="number"
+                    value={formData.loyer}
+                    onChange={(e) => handleInputChange('loyer', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
                 
-                <ResponsiveContainer width="100%" height={400}>
-                  <LineChart 
-                    data={results.resultatsParMois.filter(r => r.mois % 12 === 0)}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                  >
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Taux de rendement (%)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.tauxRendement}
+                    onChange={(e) => handleInputChange('tauxRendement', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Taux d'impôt sur les plus-values financières (%)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.fiscalitePlacement}
+                    onChange={(e) => handleInputChange('fiscalitePlacement', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">Tenir compte des différentes enveloppes fiscales (PEA, Assurance-Vie, etc.)</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl shadow-xl p-6" style={{ backgroundColor: '#dedddf' }}>
+              <h3 className="font-semibold text-gray-800 mb-4 text-xl">Hypothèses de calcul</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <ul className="text-sm text-gray-700 space-y-2">
+                  <li>• Augmentation valeur immobilière : +1,5% par an</li>
+                  <li>• Augmentation loyer : +1,5% par an</li>
+                  <li>• Augmentation taxe foncière : +3% par an</li>
+                  <li>• Gros travaux : tous les 10 ans</li>
+                </ul>
+                <ul className="text-sm text-gray-700 space-y-2">
+                  <li>• Capital initial location = apport + travaux + taxe foncière + charges (1ère année)</li>
+                  <li>• Résidence principale : pas d'impôt sur plus-values immobilières</li>
+                  <li>• Fiscalité appliquée uniquement sur les gains financiers</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">Les résultats Achat vs Location</h2>
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="p-4 rounded-lg" style={{ backgroundColor: '#c9b6e8' }}>
+                  <h3 className="font-semibold text-gray-800 mb-2">Coût mensuel Achat</h3>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {formatEuro(calculations.coutMensuelInitial)}
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg" style={{ backgroundColor: '#f6dd38' }}>
+                  <h3 className="font-semibold text-gray-800 mb-2">Coût mensuel Location</h3>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {formatEuro(formData.loyer)}
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg" style={{ backgroundColor: '#d6d5d6' }}>
+                  <h3 className="font-semibold text-gray-800 mb-2">Différentiel initial</h3>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {formatEuro(calculations.coutMensuelInitial - formData.loyer)}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-6 grid md:grid-cols-2 gap-6">
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-green-800 mb-2">Patrimoine à 30 ans - Achat</h3>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatEuro(calculations.results[29]?.patrimoineAchat || 0)}
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg" style={{ backgroundColor: '#e3f2fd' }}>
+                  <h3 className="font-semibold mb-2" style={{ color: '#0505e3' }}>Patrimoine à 30 ans - Location (Net)</h3>
+                  <p className="text-2xl font-bold" style={{ color: '#0505e3' }}>
+                    {formatEuro(calculations.results[29]?.patrimoineLocationNet || 0)}
+                  </p>
+                  <p className="text-sm mt-1" style={{ color: '#0505e3', opacity: 0.7 }}>
+                    Après impôts sur les plus-values
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-6 bg-yellow-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-yellow-800 mb-2">Avantage final (30 ans)</h3>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {calculations.results[29] && formatEuro(calculations.results[29].patrimoineAchat - calculations.results[29].patrimoineLocationNet)}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">Évolution du Patrimoine Net (Avant Impôt)</h2>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={calculations.results}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="annee"
-                      tick={{fontFamily: 'Playfair Display, serif'}}
-                      tickFormatter={(value) => `Année ${value}`}
-                    />
-                    <YAxis 
-                      tickFormatter={(value) => formatCurrency(value)}
-                      tick={{fontFamily: 'Playfair Display, serif'}}
-                    />
+                    <XAxis dataKey="annee" />
+                    <YAxis tickFormatter={(value) => `${Math.round(value/1000)}k€`} />
                     <Tooltip 
-                      formatter={(value, name) => [formatCurrency(value), name]}
-                      labelFormatter={(value) => `Année ${value}`}
-                      contentStyle={{fontFamily: 'Playfair Display, serif'}}
+                      formatter={(value) => [formatEuro(value), '']}
+                      labelFormatter={(label) => `Année ${label}`}
                     />
-                    <Legend wrapperStyle={{fontFamily: 'Playfair Display, serif'}} />
+                    <Legend />
                     <Line 
                       type="monotone" 
-                      dataKey="valeurCession" 
-                      stroke="#775d83" 
-                      strokeWidth={3} 
-                      name="Gain net immobilier"
-                      dot={{fill: '#775d83', strokeWidth: 2}}
+                      dataKey="patrimoineAchat" 
+                      stroke="#340849" 
+                      strokeWidth={3}
+                      name="Patrimoine Brut Achat"
                     />
                     <Line 
                       type="monotone" 
-                      dataKey="patrimoineFinancier" 
-                      stroke="#f8e53b" 
-                      strokeWidth={3} 
-                      name="Gain net financier"
-                      dot={{fill: '#f8e53b', strokeWidth: 2}}
+                      dataKey="patrimoineLocationBrut" 
+                      stroke="#0505e3" 
+                      strokeWidth={3}
+                      name="Patrimoine Brut Location"
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
-          )}
 
-          {/* Disclaimer légal */}
-          <div className="mt-12 text-center">
-            <div className="rounded-lg shadow-sm p-4 max-w-4xl mx-auto text-white" style={{background: 'linear-gradient(135deg, #44145b 0%, #2a0845 50%, #1a0530 100%)'}}>
-              <p className="text-sm" style={playfairStyle}>
-                <strong>Avertissement :</strong> Cette simulation ne constitue pas un conseil en investissement, une recommandation personnalisée, ni une analyse financière au sens de la réglementation en vigueur (articles L.321-1 et suivants du Code monétaire et financier).
-              </p>
+            <div className="rounded-2xl shadow-xl p-6" style={{ backgroundColor: '#f6f2fa' }}>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">Évolution du Patrimoine Net (Après Impôt)</h2>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={calculations.results}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="annee" />
+                    <YAxis tickFormatter={(value) => `${Math.round(value/1000)}k€`} />
+                    <Tooltip 
+                      formatter={(value) => [formatEuro(value), '']}
+                      labelFormatter={(label) => `Année ${label}`}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="patrimoineAchat" 
+                      stroke="#340849" 
+                      strokeWidth={3}
+                      name="Patrimoine Net Achat"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="patrimoineLocationNet" 
+                      stroke="#0505e3" 
+                      strokeWidth={3}
+                      name="Patrimoine Net Location"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">Détail par Année</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full table-auto text-sm">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-3 py-2 text-left font-semibold">Année</th>
+                      <th className="px-3 py-2 text-right font-semibold">Différentiel mensuel</th>
+                      <th className="px-3 py-2 text-right font-semibold">Patrimoine Achat</th>
+                      <th className="px-3 py-2 text-right font-semibold">Patrimoine Location (Net)</th>
+                      <th className="px-3 py-2 text-right font-semibold">Avantage Net</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calculations.results.map((row, index) => {
+                      const avantageNet = row.patrimoineAchat - row.patrimoineLocationNet;
+                      return (
+                        <tr key={row.annee} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                          <td className="px-3 py-2 font-medium">{row.annee}</td>
+                          <td className="px-3 py-2 text-right text-purple-600 font-semibold">
+                            {formatEuro(row.differentielMensuel)}
+                          </td>
+                          <td className="px-3 py-2 text-right font-semibold" style={{ color: '#340849' }}>
+                            {formatEuro(row.patrimoineAchat)}
+                          </td>
+                          <td className="px-3 py-2 text-right font-semibold" style={{ color: '#0505e3' }}>
+                            {formatEuro(row.patrimoineLocationNet)}
+                          </td>
+                          <td className={`px-3 py-2 text-right font-semibold ${avantageNet > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {avantageNet > 0 ? '+' : ''}{formatEuro(avantageNet)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
+        )}
+        
+        <div className="text-center mt-12 mb-8">
+          <p className="text-xs text-gray-400 max-w-4xl mx-auto leading-relaxed">
+            Cette simulation ne constitue pas un conseil en investissement, une recommandation personnalisée, ni une analyse financière au sens de la réglementation en vigueur (articles L.321-1 et suivants du Code monétaire et financier).
+          </p>
         </div>
       </div>
-    </>
+    </div>
   );
-}
+};
+
+export default PatrimoineComparator;
