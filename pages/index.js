@@ -187,7 +187,8 @@ const PatrimoineComparator = () => {
                     type="number"
                     value={formData.prixAchat}
                     onChange={(e) => handleInputChange('prixAchat', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
@@ -198,7 +199,8 @@ const PatrimoineComparator = () => {
                     step="0.1"
                     value={formData.fraisNotaire}
                     onChange={(e) => handleInputChange('fraisNotaire', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
@@ -208,7 +210,8 @@ const PatrimoineComparator = () => {
                     type="number"
                     value={formData.travaux}
                     onChange={(e) => handleInputChange('travaux', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
@@ -218,7 +221,8 @@ const PatrimoineComparator = () => {
                     type="number"
                     value={formData.apport}
                     onChange={(e) => handleInputChange('apport', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
@@ -229,7 +233,8 @@ const PatrimoineComparator = () => {
                     step="0.1"
                     value={formData.tauxEmprunt}
                     onChange={(e) => handleInputChange('tauxEmprunt', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
@@ -241,7 +246,8 @@ const PatrimoineComparator = () => {
                     max="25"
                     value={formData.dureeEmprunt}
                     onChange={(e) => handleInputChange('dureeEmprunt', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
