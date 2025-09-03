@@ -257,7 +257,8 @@ style={{ color: '#1f2937' }}
                     type="number"
                     value={formData.taxeFonciere}
                     onChange={(e) => handleInputChange('taxeFonciere', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
@@ -267,7 +268,8 @@ style={{ color: '#1f2937' }}
                     type="number"
                     value={formData.chargesMensuelles}
                     onChange={(e) => handleInputChange('chargesMensuelles', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
@@ -278,7 +280,8 @@ style={{ color: '#1f2937' }}
                     step="0.1"
                     value={formData.grosTravaux}
                     onChange={(e) => handleInputChange('grosTravaux', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
               </div>
@@ -297,7 +300,8 @@ style={{ color: '#1f2937' }}
                     type="number"
                     value={formData.loyer}
                     onChange={(e) => handleInputChange('loyer', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
@@ -308,7 +312,8 @@ style={{ color: '#1f2937' }}
                     step="0.1"
                     value={formData.tauxRendement}
                     onChange={(e) => handleInputChange('tauxRendement', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                 </div>
                 
@@ -319,7 +324,8 @@ style={{ color: '#1f2937' }}
                     step="0.1"
                     value={formData.fiscalitePlacement}
                     onChange={(e) => handleInputChange('fiscalitePlacement', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 font-semibold"
+style={{ color: '#1f2937' }}
                   />
                   <p className="text-xs text-gray-600 mt-1">Tenir compte des différentes enveloppes fiscales (PEA, Assurance-Vie, etc.)</p>
                 </div>
